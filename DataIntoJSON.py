@@ -83,7 +83,7 @@ class GeoJSON_Creator:
                     #print(self.other_attributes)
                     #exit()
                
-    def ddata_into_json(self):
+    def data_into_json(self):
         d = {}
         d["type"] = "FeatureCollection"
         d["features"] = []

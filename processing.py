@@ -15,7 +15,7 @@ def main():
     filename = args['filename'].split('.nc')[0]
     outfile = filename+'.geojson'
     outfile_binned = filename+'_binned.geojson'
-    print("Will create outfile to " + outfile " and " + outfile_binned)
+    print("Will create outfile to " + outfile + " and " + outfile_binned)
     AverageNC_Data.AverageNCData(filename=filename + '.nc', outfile=outfile)
     d = kd.KrigingTool(filename=outfile, settimer=True, fast=True, bo = outfile_binned)
 

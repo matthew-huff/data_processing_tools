@@ -10,6 +10,7 @@ import dask.dataframe as dd
 import multiprocessing as mp
 import argparse
 from multiprocessing import Array
+import concurrent.futures
 
 
 # This class takes an argument of a filename that contains a .nc file
@@ -46,24 +47,23 @@ class AverageNCData:
 
     def average_variable(self, variable_name):
         print("Averaging " + str(variable_name))
-        final_arr = np.empty((self.num_lats, self.num_longs))
         arr = self.file[variable_name]
-        
-        #For each point in the grid
-        for i in trange(0, self.num_lats):
-            for j in range(0, self.num_longs):
-                #Grab the average for all time stamps
-                #print( str( (i, j) ))
-                final_arr[i, j] = np.average(arr[:, i, j])
-            
-        return final_arr
+        return np.average(arr, axis=0)
 
-    def get_array_average(self, arr):
-        return np.average(arr)
-    
-    #def average_variable(self, i):
-        #self.final_arr[i[0], i[1]] = np.average(self.arr[:, i[0], i[1]])
-    #    return(i, self.get_array_average(self.arr[:, i[0], i[1]]))
+    def get_array_average(self, arr, i):
+        newArr = []
+        #print("---")
+        #print(np.average(arr, axis=0))
+        #print("---")
+
+        return np.average(arr, axis=0)
+        #for j in range(self.num_longs):
+            #print(i, j)
+            #print(arr[:, j])
+            #print(arr[:])
+            #newArr.append( (np.average(arr[:, j]), j))
+ 
+        
                 
     def data_into_JSON(self):
         d = {}
@@ -82,7 +82,6 @@ class AverageNCData:
         new_file = open(self.outfile, 'w')
         new_file.write(json.dumps(d))
 
-    
     def get_data_at_point(self, i, j):
         d = {}
         for var in self.new_vars:
@@ -90,6 +89,5 @@ class AverageNCData:
         return d
 
      
-        
-
-
+def main():
+    a = AverageNCData(filename='data/wrfout_d03_2012_fake.nc', outfile='data/out.geojson')
