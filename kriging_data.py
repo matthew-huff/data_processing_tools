@@ -36,8 +36,9 @@ class KrigingTool:
             print("Error: Input a filename")
             exit()
 
-        try:
+        try: 
             self.binned_out = kwargs['bo']
+            self.binned_out_part = self.binned_out[:-8] + "_part.geojson"
 
         except:
             print("Error: specify binned out data file with .geojson end")
@@ -260,10 +261,14 @@ class KrigingTool:
 
 
         d = dj.GeoJSON_Creator(binnedData)
-        binned_json_data = d.data_into_json()
+        binned_json_data = d.data_into_json('full')
+        part_binned_json_data = d.data_into_json('part')
 
         with open(self.binned_out, 'w+') as file:
             file.write(binned_json_data)
+
+        with open(self.binned_out_part, 'w+') as file:
+            file.write(part_binned_json_data)
         
         return
         

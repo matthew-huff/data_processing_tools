@@ -83,14 +83,14 @@ class GeoJSON_Creator:
                     #print(self.other_attributes)
                     #exit()
                
-    def data_into_json(self):
+    def data_into_json(self, size):
         d = {}
         d["type"] = "FeatureCollection"
         d["features"] = []
         for i in self.data:
             #print(i)
             dictionary = {  "type" : "Feature",
-                "geometry" :  self.createGeometryDict(i[0]), 
+                "geometry" :  self.createGeometryDict(i[0], size), 
                 "properties" : self.createPropertiesDict(i[2])}
             d["features"].append(dictionary)
         return json.dumps(d)
@@ -113,8 +113,20 @@ class GeoJSON_Creator:
                     pass
         return propDict
 
-    def createGeometryDict(self, geom):
+
+
+    def createGeometryDict(self, geom, size):
+        
+        
         geometry = shapely.wkt.loads(geom)
+
+        if(size == 'part'):
+            minVal = min(np.max(geometry.geoms[0].exterior.xy[0]) - np.min(geometry.geoms[0].exterior.xy[0]),
+            np.max(geometry.geoms[0].exterior.xy[1]) - np.min(geometry.geoms[0].exterior.xy[1]) )
+
+            bufferVal = -0.22 * minVal
+            
+            geometry = geometry.buffer(bufferVal)
         return geometry.__geo_interface__
 
     #def builtPropertiesDict(self, censusTractCode):
