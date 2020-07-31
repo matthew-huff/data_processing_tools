@@ -1,2 +1,2 @@
 Run
-  python processing.py -f <filename>.nc
+  `python processing.py -f <filename>.nc`
