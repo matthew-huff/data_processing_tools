@@ -161,25 +161,6 @@ class KrigingTool:
 
         return pt_chunks
             
-            #Check
-    
-    
-
-    def dataIntoJson(self, data):
-        d = {}
-        d["type"] = "FeatureCollection"
-        d["features"] = []
-  
-        for i in data:
-            
-            dictionary = {  "type" : "Feature",
-                "geometry" : {"type" : "Point", "coordinates": [float(i['lon']), float(i['lat'])]},
-                            "properties" : {"pm25" : float(i['pm25'])}
-                            }
-            d["features"].append(dictionary)
-        return d
-
-    
     def main(self):
         self.fast_kriging()
         
@@ -188,8 +169,8 @@ class KrigingTool:
         
         geo_data = self.construct_dataset_from_geojson()
         variables = geo_data['variables'][0]
-        variable_dict = {}
-        
+        krigged_variable_dict = {}  #Dictionary to hold points and variables of data that is krigged
+        nonkrigged_variable_dict = {} #Dictionary to hold points and variables of data that is not krigged
 
         #Create an array of centroid points called pts of census tracts from the census tract .shp fle
         geometries = [i for i in self.ct['geometry']]
@@ -201,63 +182,53 @@ class KrigingTool:
         x_array = [i.x for i in pts]       
         y_array = [i.y for i in pts]
 
-        
-       
         #For each variable
         for variableName in tqdm(variables):
-            
-            #Create an empty numpy array with a space for data to be used in kriging process
-            data = np.empty((len(geo_data['lats']), 3))
-            
-            #Transfrom daata into array
-            for i in trange(len(data)):
-                data[i][0] = geo_data['lats'][i]
-                data[i][1] = geo_data['lons'][i]
-                data[i][2] = geo_data['variables'][i][variableName]
+            krigVar = input("Perform kriging on " + variableName + "? (y/n)")
 
-            #Run kriging algorithm on sample data
-            OK = OrdinaryKriging(data[:,0], data[:,1], data[:,2], variogram_model='linear', verbose=False, enable_plotting=False)
-
-            """
-            #Create an array of centroid points called pts of census tracts from the census tract .shp fle
-            geometries = [i for i in self.ct['geometry']]
-            pts = [None] * len(geometries)
-            for i in trange(len(geometries)):
-                pts[i] = geometries[i].centroid
+            while(krigVar.lower() != 'y' or krigVar.lower() != 'n'):
+                krigVar = input("Please insert 'y' or 'n' without quotes.")
             
-            # Transform pts array to execute kriging
-            x_array = [i.x for i in pts]       
-            y_array = [i.y for i in pts]
-            """
-            #Krig on selected centroid points
-            z, ss = OK.execute('points', y_array, x_array)
-            
-            
-            
-            for i in trange(0, len(x_array)):
+            if(krigVar.lower() == 'y'):
+                #Create an empty numpy array with a space for data to be used in kriging process
+                data = np.empty((len(geo_data['lats']), 3))
                 
-                try:
-                    variable_dict[ str((x_array[i], y_array[i])) ][variableName] = z[i]
-                except KeyError:
-                    variable_dict[ str((x_array[i], y_array[i])) ] = {}
-                    variable_dict[ str((x_array[i], y_array[i])) ][variableName] = z[i]
+                #Transfrom data into array
+                for i in trange(len(data)):
+                    data[i][0] = geo_data['lats'][i]
+                    data[i][1] = geo_data['lons'][i]
+                    data[i][2] = geo_data['variables'][i][variableName]
 
-                #values = {}
-                #values['lon'] = x_array[i]
-                #values['lat'] = y_array[i]
-                #values[variableName] = z[i]
-                #new_data.append(values)
-            
-            #print(variable_dict)
-            #data_for_binning = [None] * len(new_data)
-            #for i in trange(len(new_data)):
-            #    data_for_binning[i] = [new_data[i]['lat'], new_data[i]['lon'], new_data[i][variableName]]
-            
-            
-            #binnedData = self.binPoints(data_for_binning)
+                #Run kriging algorithm on sample data
+                OK = OrdinaryKriging(data[:,0], data[:,1], data[:,2], variogram_model='linear', verbose=False, enable_plotting=False)
+
+                #Krig on selected centroid points
+                z, ss = OK.execute('points', y_array, x_array)
+                
+                for i in trange(0, len(x_array)):
+                    
+                    try:
+                        krigged_variable_dict[ str((x_array[i], y_array[i])) ][variableName] = z[i]
+                    except KeyError:
+                        krigged_variable_dict[ str((x_array[i], y_array[i])) ] = {}
+                        krigged_variable_dict[ str((x_array[i], y_array[i])) ][variableName] = z[i]
+
+
+            elif(krigVar.lower() == 'n'):
+                #TODO: Create case for choosing not to krig a variable. Create another dict with  points and values from non-krigged data, store in seperate file
+                print("Not kriging " + variableName)
+                for i in trange(len(geo_data['lats'])):
+                    
+                    try:
+                        nonkrigged_variable_dict[ str(( geo_data['lons'][i], geo_data['lats'][i] ))][variableName] = geo_data['variables'][i][variableName]
+                    except:
+                        nonkrigged_variable_dict[ str(( geo_data['lons'][i], geo_data['lats'][i] ))] = {}
+                        nonkrigged_variable_dict[ str(( geo_data['lons'][i], geo_data['lats'][i] ))][variableName] = geo_data['variables'][i][variableName]
+
+
         
        
-        binnedData = self.binPoints(variable_dict)
+        binnedData = self.binPoints(krigged_variable_dict)
 
 
         d = dj.GeoJSON_Creator(binnedData)
@@ -312,18 +283,16 @@ class KrigingTool:
             hashTable[self.createGeoHash(str(geometries[i]))] = names[i]
         return hashTable
 
-    def binPoints(self, points):
+    def binPoints(self, variable_dict):
         finalData = []
 
         transformed_data = []
-        for key in points.keys():
+        for key in variable_dict.keys():
             new_data_array = []
             lon, lat = key[1:-1].split(", ")
-            variables = points[key]
+            variables = variable_dict[key]
             new_data_array = [float(lat), float(lon), variables]
             transformed_data.append(new_data_array)
-
-
 
         geometries = [i for i in self.ct['geometry']]
 

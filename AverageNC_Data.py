@@ -49,22 +49,7 @@ class AverageNCData:
         print("Averaging " + str(variable_name))
         arr = self.file[variable_name]
         return np.average(arr, axis=0)
-
-    def get_array_average(self, arr, i):
-        newArr = []
-        #print("---")
-        #print(np.average(arr, axis=0))
-        #print("---")
-
-        return np.average(arr, axis=0)
-        #for j in range(self.num_longs):
-            #print(i, j)
-            #print(arr[:, j])
-            #print(arr[:])
-            #newArr.append( (np.average(arr[:, j]), j))
- 
-        
-                
+            
     def data_into_JSON(self):
         d = {}
         d["type"] = "FeatureCollection"

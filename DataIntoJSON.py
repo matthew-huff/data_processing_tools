@@ -65,23 +65,14 @@ class GeoJSON_Creator:
 
         #   DATA IN FORM [  Multipolygon Geometry, [  [x, y, pm25], [...], ... ], CensusTractCode ]
     def get_other_attributes(self, data):
-        
-       
         for item in data:
-            #print(item)
             for key in item[1][2]:
                 #Place value in:  other_attributes[census_tract][key] = value
                 try:
-                    
-
                     self.other_attributes[item[2]][key] = item[1][2][key]
-                    #print(self.other_attributes)
-                    #exit()
                 except KeyError:
                     self.other_attributes[item[2]] = {}
                     self.other_attributes[item[2]][key] = item[1][2][key]
-                    #print(self.other_attributes)
-                    #exit()
                
     def data_into_json(self, size):
         d = {}
@@ -116,10 +107,7 @@ class GeoJSON_Creator:
 
 
     def createGeometryDict(self, geom, size):
-        
-        
         geometry = shapely.wkt.loads(geom)
-
         if(size == 'part'):
             minVal = min(np.max(geometry.geoms[0].exterior.xy[0]) - np.min(geometry.geoms[0].exterior.xy[0]),
             np.max(geometry.geoms[0].exterior.xy[1]) - np.min(geometry.geoms[0].exterior.xy[1]) )
