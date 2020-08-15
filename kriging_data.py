@@ -14,7 +14,8 @@ from tqdm import tqdm, trange
 
 import shapefile
 import geopandas as gpd
-import DataIntoJSON as dj
+import data_manipulator as dj
+
 
 
 class KrigingTool:
@@ -39,6 +40,7 @@ class KrigingTool:
         try: 
             self.binned_out = kwargs['bo']
             self.binned_out_part = self.binned_out[:-8] + "_part.geojson"
+            self.csv_outfile_name = self.binned_out[:-8] + ".csv"
 
         except:
             print("Error: specify binned out data file with .geojson end")
@@ -161,8 +163,7 @@ class KrigingTool:
 
         return pt_chunks
             
-    def main(self):
-        self.fast_kriging()
+
         
     
     def fast_kriging(self):
@@ -185,8 +186,8 @@ class KrigingTool:
         #For each variable
         for variableName in tqdm(variables):
             krigVar = input("Perform kriging on " + variableName + "? (y/n)")
-
-            while(krigVar.lower() != 'y' or krigVar.lower() != 'n'):
+            print(krigVar)
+            while(krigVar.lower() != 'y' and krigVar.lower() != 'n'):
                 krigVar = input("Please insert 'y' or 'n' without quotes.")
             
             if(krigVar.lower() == 'y'):
@@ -226,23 +227,24 @@ class KrigingTool:
                         nonkrigged_variable_dict[ str(( geo_data['lons'][i], geo_data['lats'][i] ))][variableName] = geo_data['variables'][i][variableName]
 
 
+    
+        return krigged_variable_dict, nonkrigged_variable_dict
         
-       
+    def writeData(self, krigged_variable_dict, nonkrigged_variable_dict):
         binnedData = self.binPoints(krigged_variable_dict)
-
-
-        d = dj.GeoJSON_Creator(binnedData)
+        d = dj.DataManipulator(binnedData)
         binned_json_data = d.data_into_json('full')
         part_binned_json_data = d.data_into_json('part')
+        csv_data = d.data_into_csv()
 
         with open(self.binned_out, 'w+') as file:
             file.write(binned_json_data)
 
         with open(self.binned_out_part, 'w+') as file:
             file.write(part_binned_json_data)
-        
-        return
-        
+
+        with open(self.csv_outfile_name, 'w+') as file:
+            file.write(csv_data)
 
     def createPtArray(self, points):
         ptArray = []
@@ -325,5 +327,10 @@ class KrigingTool:
                 finalData.append(newData)
         #print(finalData)
         return finalData  
-        
+
+
+    def main(self):
+        krigged_variable_dict, nonkrigged_variable_dict = self.fast_kriging()
+        self.writeData(krigged_variable_dict, nonkrigged_variable_dict)
+    
 
